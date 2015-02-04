@@ -8,98 +8,96 @@ import APIkey as keys
 
 
 
-def make_chains(input_text, x_gram):
+def make_chains(inputtext, xgram):
     """Takes an input text as a string and returns a dictionary of
-    markov chains."""
-    text = input_text.replace('\n', " ")
-    text_list = text.strip().split()
+    markov chains.
+    """
+    text = inputtext.replace('\n', " ")
+    textlist = text.strip().split()
     
-    markov_dict = {}
+    markovdict = {}
 
-    for i in range(len(text_list) - x_gram):
-        key = tuple(text_list[i:i + x_gram])
-        value = text_list[i + x_gram]
-        
-        if key not in markov_dict:
-            markov_dict[key] = [value]
+    for i in range(len(textlist) - xgram):
+        key = tuple(textlist[i:i + xgram])
+        value = textlist[i + xgram]
+        if key not in markovdict:
+            markovdict[key] = [value]
         else:
-            markov_dict[key].append(value)
-    # print chains
-    return markov_dict
+            markovdict[key].append(value)
+    return markovdict
 
-def make_text(chains, x_gram):
+
+#Leaned heavily on doubledherin/FrasierLebowski in order to 
+#work through 'def make_text':   
+def make_text(chains, xgram):
     """Takes a dictionary of markov chains and returns random text
-    based off an original text."""
-    prefix = random.choice(chains.keys()) # returns tuple of x_gram words
-    suffix = random.choice(chains[prefix]) # returns str - one word
-    
-    markov_text = ""
+    based off an original text.
+    """
+    prefix = random.choice(chains.keys()) # returns tuple 
+    suffix = random.choice(chains[prefix]) # returns str (one word)
+    markovtext = ""
     for word in prefix:
-        markov_text += word + " "
-    markov_text += suffix + " "
-    
-
+        markovtext += word + " "
+    markovtext += suffix + " "
     for i in range(40): #how many rounds
-        new_prefix = []
-
-        for j in range(1, x_gram):
-            new_prefix.append(prefix[j])
-        
-        new_prefix.append(suffix)
-        
-        prefix = tuple(new_prefix)
+        newprefix = []
+        for j in range(1, xgram):
+            newprefix.append(prefix[j])
+        newprefix.append(suffix)
+        prefix = tuple(newprefix)
         suffix = random.choice(chains[prefix])
+        markovtext += "{} ".format(suffix)
+    return markovtext
 
-        markov_text += "%s " % (suffix) #must use this format to include space
-        # count = len(list(markov_text))
-    return markov_text
 
-def make_tweet(markov_text):
-    Markov_text = markov_text.capitalize()
-    Markov_text_list = Markov_text.split()
-   
-    while Markov_text_list[-1][-1] not in ".!?'":
-        Markov_text_list.pop()
-    
-    for i in range (len(Markov_text_list)-1):
-        if Markov_text_list[i][-1] in ".!?":
-            Markov_text_list[i+1] = Markov_text_list[i+1].capitalize()
-        if Markov_text_list[i] in "ii'vei'di'lli'mi...":
-            Markov_text_list[i] = Markov_text_list[i].capitalize()
-    
-    tweet = (" ").join(Markov_text_list)
+#Some code inside 'def make_tweet' taken from doubledherin/FrasierLebowski,
+#particularly the recursive portion:
+def make_tweet(markovtext):
+    """Takes random text, cleans up, crops to be twitter appropriate length,
+    and posts to twitter.
+    """
+    Markovtext = markovtext.capitalize()
+    Markovtextlist = Markovtext.split()
+    while Markovtextlist[-1][-1] not in ".!?'":
+        Markovtextlist.pop()
+    for i in range (len(Markovtextlist)-1):
+        if Markovtextlist[i][-1] in ".!?":
+            Markovtextlist[i+1] = Markovtextlist[i+1].capitalize()
+        if Markovtextlist[i] in "ii'vei'di'lli'mi...":
+            Markovtextlist[i] = Markovtextlist[i].capitalize()
+    tweet = (" ").join(Markovtextlist)
     if len(tweet) > 140:
         tweet = tweet[:139]
         make_tweet(tweet)
     else:
         if tweet != None:
-        
             print tweet
-
             api = twitter.Api(consumer_key = keys.consumer_key,
                   consumer_secret = keys.consumer_secret,
                   access_token_key = keys.access_token_key,
                   access_token_secret = keys.access_token_secret)
             status = api.PostUpdate(tweet)
-            print "Tweet tweeted!"
-        
-    return Markov_text
+            print "Tweet tweeted successfully"
+    return Markovtext
+
+
+def read_files(filename1, filename2):
+    file1 = open(filename1)
+    inputtext = file1.read()
+    file2 = open(filename2)
+    inputtext += file2.read()
+    file1.close()
+    file2.close()
+    return inputtext
+
 
 def main():
     script, filename1, filename2, num = argv
-    file1 = open(filename1)
-    input_text = file1.read()
-    file2 = open(filename2)
-    input_text += file2.read()
-    x_gram = int(num)
-    file1.close()
-    file2.close()
-    
-    chain_dict = make_chains(input_text, x_gram)
-    random_text = make_text(chain_dict, x_gram)
-    make_tweet(random_text)
-    # print twitter_text
-    
+    xgram = int(num)
+    inputtext = read_files(filename1, filename2)
+    chaindict = make_chains(inputtext, xgram)
+    randomtext = make_text(chaindict, xgram)
+    make_tweet(randomtext)
 
 if __name__ == "__main__":
     main()
